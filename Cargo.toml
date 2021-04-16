@@ -1,0 +1,15 @@
+[package]
+name = "dic"
+version = "0.1.0"
+authors = ["Frank Wiles <frank@revsys.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+clap = "2.33.3"
+tokio = { version = "1.2", features = ["macros", "time", "fs", "net", "rt", "rt-multi-thread", "io-util"] }
+bollard = "0.10.1"
+termion = "1.5.6"
+rprompt = "1.0.5"
+humansize = "1.1.0"
