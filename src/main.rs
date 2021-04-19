@@ -1,4 +1,4 @@
-use bollard::image::ListImagesOptions;
+use bollard::image::{ListImagesOptions, RemoveImageOptions};
 use bollard::models::ImageSummary;
 use bollard::Docker;
 use clap::{App, Arg};
@@ -55,10 +55,35 @@ async fn get_images(query: &str) -> Vec<ImageSummary> {
 
 async fn remove_images(images: Vec<ImageSummary>) {
     let docker = Docker::connect_with_local_defaults().unwrap();
+    let remove_options = Some(RemoveImageOptions { force: true, ..Default::default()});
+
     // TODO actually delete the image
     for image in images {
-        println!("{}", image.id)
+        println!("Removing {}", image.id);
+        docker.remove_image(&image.id, remove_options, None).await.unwrap();
     }
+}
+
+#[derive(Debug)]
+pub enum PromptError {
+    Bailed,
+}
+
+pub type PromptResult = Result<(), PromptError>;
+
+fn prompt_user() -> PromptResult {
+    // Prompt user for deletion
+    println!(
+        "{}Delete these Docker images? [y/N]",
+        color::Fg(color::White)
+    );
+    let reply = rprompt::read_reply().unwrap();
+
+    if reply.to_lowercase() != String::from("y") {
+        return Err(PromptError::Bailed);
+    }
+
+    Ok(())
 }
 
 #[tokio::main]
@@ -96,22 +121,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
         return Ok(());
     }
 
-    // Prompt user for deletion
-    println!(
-        "{}Delete these Docker images? [y/N]",
-        color::Fg(color::White)
-    );
-    let reply = rprompt::read_reply().unwrap();
-
-    if reply.to_lowercase() != String::from("y") {
-        println!(
-            "{}Exiting, will leave your images alone!",
-            color::Fg(color::Red)
-        );
+    // Prompt the user and remove if they agree
+    match prompt_user() {
+        Ok(_) => remove_images(matching_images).await,
+        Err(_) => {
+            println!(
+                "{}Exiting, will leave your images alone!",
+                color::Fg(color::Red)
+            );
+            std::process::exit(0);
+        }
     }
-
-    // Delete the images
-    remove_images(matching_images).await;
 
     Ok(())
 }
