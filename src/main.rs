@@ -7,10 +7,6 @@ use rprompt;
 use std::default::Default;
 use termion::color;
 
-fn print_type_of<T>(_: &T) {
-    println!("{}", std::any::type_name::<T>())
-}
-
 /* To show file size in the same format `docker images` does */
 const ROUNDED_BINARY: options::FileSizeOpts = options::FileSizeOpts {
     divider: options::Kilo::Decimal,
@@ -57,7 +53,6 @@ async fn remove_images(images: Vec<ImageSummary>) {
     let docker = Docker::connect_with_local_defaults().unwrap();
     let remove_options = Some(RemoveImageOptions { force: true, ..Default::default()});
 
-    // TODO actually delete the image
     for image in images {
         println!("Removing {}", image.id);
         docker.remove_image(&image.id, remove_options, None).await.unwrap();
