@@ -54,7 +54,7 @@ async fn remove_images(images: Vec<ImageSummary>) {
     let remove_options = Some(RemoveImageOptions { force: true, ..Default::default()});
 
     for image in images {
-        println!("Removing {}", image.id);
+        println!("{}Removing {}", color::Fg(color::Yellow), image.id);
         docker.remove_image(&image.id, remove_options, None).await.unwrap();
     }
 }
@@ -69,7 +69,7 @@ pub type PromptResult = Result<(), PromptError>;
 fn prompt_user() -> PromptResult {
     // Prompt user for deletion
     println!(
-        "{}Delete these Docker images? [y/N]",
+        "\n{}Delete these Docker images? [y/N]",
         color::Fg(color::White)
     );
     let reply = rprompt::read_reply().unwrap();
