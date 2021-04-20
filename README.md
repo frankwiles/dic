@@ -21,6 +21,10 @@ It will search all of your local images matching the `QUERY` string. It will pro
 with all the images that match and give you an opportunity to confirm deletion or bail out
 if you have too broad of a search. 
 
+## Screenshot
+
+![Screenshot](images/readme-screenshot-1.png)
+
 ## License
 
 This is code is BSD licensed.  I've released this in the open, but I don't intend to put a 
