@@ -3,7 +3,6 @@ use bollard::models::ImageSummary;
 use bollard::Docker;
 use clap::{App, Arg};
 use humansize::{file_size_opts as options, FileSize};
-use rprompt;
 use std::default::Default;
 use termion::color;
 
@@ -74,7 +73,7 @@ fn prompt_user() -> PromptResult {
     );
     let reply = rprompt::read_reply().unwrap();
 
-    if reply.to_lowercase() != String::from("y") {
+    if reply.to_lowercase() != *"y" {
         return Err(PromptError::Bailed);
     }
 
@@ -108,7 +107,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
     );
     let matching_images = get_images(query).await;
 
-    if matching_images.len() == 0 {
+    if matching_images.is_empty() {
         println!(
             "{}Sorry, no matching containers found!",
             color::Fg(color::Red)
