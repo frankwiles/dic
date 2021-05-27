@@ -45,6 +45,10 @@ async fn get_images(query: &str) -> Vec<ImageSummary> {
         }
     }
 
+    // Sort and deduplicate
+    matching_images.sort_by(|a, b| b.id.cmp(&a.id));
+    matching_images.dedup();
+
     return matching_images;
 }
 
