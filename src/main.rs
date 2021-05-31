@@ -88,7 +88,7 @@ fn prompt_user() -> PromptResult {
 async fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
     // Setup command line options
     let matches = App::new("Docker Image Cleaner")
-        .version("0.1.0")
+        .version("0.1.1")
         .author("Frank Wiles <frank@revsys.com>")
         .about("Removes local docker images by simple text pattern matching")
         .arg(
