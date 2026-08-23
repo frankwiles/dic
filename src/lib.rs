@@ -7,7 +7,6 @@ use bollard::models::ImageSummary;
 use bollard::query_parameters::{ListImagesOptionsBuilder, RemoveImageOptionsBuilder};
 use clap::Parser;
 use humansize::{DECIMAL, format_size_i};
-use termion::color;
 
 /// Remove local Docker images using simple text matching.
 #[derive(Debug, Parser)]
@@ -99,9 +98,27 @@ fn select_images(
     selected
 }
 
-fn paint<C: color::Color>(enabled: bool, shade: C, text: impl Display) -> String {
+enum Color {
+    Red,
+    Green,
+    Yellow,
+    LightBlue,
+}
+
+impl Color {
+    fn ansi_code(&self) -> u8 {
+        match self {
+            Self::Red => 31,
+            Self::Green => 32,
+            Self::Yellow => 33,
+            Self::LightBlue => 94,
+        }
+    }
+}
+
+fn paint(enabled: bool, color: Color, text: impl Display) -> String {
     if enabled {
-        format!("{}{}{}", color::Fg(shade), text, color::Fg(color::Reset))
+        format!("\x1b[{}m{text}\x1b[0m", color.ansi_code())
     } else {
         text.to_string()
     }
@@ -121,7 +138,7 @@ fn display_images(images: &[SelectedImage], color_enabled: bool) {
 
     println!(
         "\n{} image{} selected.",
-        paint(color_enabled, color::LightBlue, images.len()),
+        paint(color_enabled, Color::LightBlue, images.len()),
         if images.len() == 1 { "" } else { "s" }
     );
 }
@@ -148,7 +165,7 @@ async fn remove_images(
     for selected in images {
         println!(
             "{} {}",
-            paint(color_enabled, color::Yellow, "Removing"),
+            paint(color_enabled, Color::Yellow, "Removing"),
             selected.image.id
         );
 
@@ -158,7 +175,7 @@ async fn remove_images(
         {
             eprintln!(
                 "{} {}: {error}",
-                paint(color_enabled, color::Red, "Failed to remove"),
+                paint(color_enabled, Color::Red, "Failed to remove"),
                 selected.image.id
             );
             failures.push(selected.image.id.clone());
@@ -182,8 +199,8 @@ pub async fn run(cli: Cli) -> Result<()> {
 
     println!(
         "{} {}\n",
-        paint(color_enabled, color::Green, "Looking for images matching:"),
-        paint(color_enabled, color::LightBlue, description)
+        paint(color_enabled, Color::Green, "Looking for images matching:"),
+        paint(color_enabled, Color::LightBlue, description)
     );
 
     let docker = Docker::connect_with_local_defaults().context("failed to connect to Docker")?;
@@ -197,7 +214,7 @@ pub async fn run(cli: Cli) -> Result<()> {
     if selected.is_empty() {
         println!(
             "{}",
-            paint(color_enabled, color::Yellow, "No matching images found.")
+            paint(color_enabled, Color::Yellow, "No matching images found.")
         );
         return Ok(());
     }
