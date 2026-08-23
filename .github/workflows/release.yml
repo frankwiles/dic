@@ -1,0 +1,119 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    name: Run tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test --all-targets --all-features --locked
+
+  release:
+    name: Build ${{ matrix.platform.name }}
+    needs: test
+    runs-on: ${{ matrix.platform.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - name: Linux x86_64
+            os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            binary: target/x86_64-unknown-linux-gnu/release/dic
+            asset: dic-linux-x86_64
+          - name: Linux x86_64 (musl)
+            os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            binary: target/x86_64-unknown-linux-musl/release/dic
+            asset: dic-linux-x86_64-musl
+          - name: macOS x86_64
+            os: macos-15
+            target: x86_64-apple-darwin
+            binary: target/x86_64-apple-darwin/release/dic
+            asset: dic-macos-x86_64
+          - name: macOS Apple Silicon
+            os: macos-14
+            target: aarch64-apple-darwin
+            binary: target/aarch64-apple-darwin/release/dic
+            asset: dic-macos-aarch64
+          - name: Windows x86_64
+            os: windows-latest
+            target: x86_64-pc-windows-msvc
+            binary: target/x86_64-pc-windows-msvc/release/dic.exe
+            asset: dic-windows-x86_64.exe
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.platform.target }}
+
+      - name: Install musl tools
+        if: matrix.platform.target == 'x86_64-unknown-linux-musl'
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+
+      - name: Build
+        run: cargo build --release --locked --target ${{ matrix.platform.target }}
+
+      - name: Prepare binary and checksum (Linux/macOS)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          strip "${{ matrix.platform.binary }}"
+          cp "${{ matrix.platform.binary }}" "${{ matrix.platform.asset }}"
+          shasum -a 256 "${{ matrix.platform.asset }}" > "${{ matrix.platform.asset }}.sha256"
+
+      - name: Prepare binary and checksum (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Copy-Item "${{ matrix.platform.binary }}" "${{ matrix.platform.asset }}"
+          $hash = (Get-FileHash "${{ matrix.platform.asset }}" -Algorithm SHA256).Hash.ToLower()
+          "$hash  ${{ matrix.platform.asset }}" | Out-File "${{ matrix.platform.asset }}.sha256" -Encoding ascii
+
+      - name: Upload binary
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ${{ matrix.platform.asset }}
+          asset_name: ${{ matrix.platform.asset }}
+          tag: ${{ github.ref }}
+          overwrite: true
+
+      - name: Upload checksum
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ${{ matrix.platform.asset }}.sha256
+          asset_name: ${{ matrix.platform.asset }}.sha256
+          tag: ${{ github.ref }}
+          overwrite: true
+
+  release-summary:
+    name: Release summary
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add download links
+        run: |
+          echo "# Release ${{ github.ref_name }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Platform | Binary | SHA256 |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|---|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Linux x86_64 | [download](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/dic-linux-x86_64) | [checksum](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/dic-linux-x86_64.sha256) |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Linux x86_64 (musl) | [download](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/dic-linux-x86_64-musl) | [checksum](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/dic-linux-x86_64-musl.sha256) |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| macOS x86_64 | [download](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/dic-macos-x86_64) | [checksum](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/dic-macos-x86_64.sha256) |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| macOS Apple Silicon | [download](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/dic-macos-aarch64) | [checksum](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/dic-macos-aarch64.sha256) |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Windows x86_64 | [download](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/dic-windows-x86_64.exe) | [checksum](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/dic-windows-x86_64.exe.sha256) |" >> "$GITHUB_STEP_SUMMARY"
