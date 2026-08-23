@@ -4,6 +4,10 @@
 
 > **Important:** Image removal is forced by default, matching the historical behavior of `dic`. Use `--no-force` to ask Docker to reject removals that require force.
 
+## Screenshot
+
+![Screenshot](images/readme-screenshot-1.png)
+
 ## Installation
 
 ### Homebrew (recommended)
@@ -73,10 +77,6 @@ Options:
 ```
 
 Colors are disabled when output is redirected or the [`NO_COLOR`](https://no-color.org/) environment variable is set.
-
-## Screenshot
-
-![Screenshot](images/readme-screenshot-1.png)
 
 ## Development
 
