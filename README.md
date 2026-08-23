@@ -1,36 +1,86 @@
 # dic (Docker Image Cleaner)
 
-## Overview
+`dic` removes local Docker images whose repository tags contain a string. It shows every match and asks for confirmation before deleting anything.
 
-Often I have found the need to destroy local Docker images based on partial
-string match.  Weirdly enough the `docker` command line does not support this.
+> **Important:** Image removal is forced by default, matching the historical behavior of `dic`. Use `--no-force` to ask Docker to reject removals that require force.
+
+## Installation
+
+Rust 1.85 or newer is required.
+
+```shell
+cargo install --path .
+```
+
+During development:
+
+```shell
+cargo build
+cargo build --release
+```
 
 ## Usage
 
-Let's assume you have a few dozen docker images pulled and/or built locally.
-And let's assume they're all tagged with `registry.revsys.com/my-cool-app` and some
-various tags.  
-
-To remove all images that match this you run: 
+Remove images with tags containing `my-cool-app`:
 
 ```shell
-$ dic my-cool-app
+dic my-cool-app
 ```
 
-It will search all of your local images matching the `QUERY` string. It will prompt you 
-with all the images that match and give you an opportunity to confirm deletion or bail out
-if you have too broad of a search. 
+Preview a case-insensitive match without prompting or deleting:
+
+```shell
+dic --ignore-case --dry-run my-cool-app
+```
+
+Delete without confirmation, while disabling Docker's forced-removal option:
+
+```shell
+dic --yes --no-force my-cool-app
+```
+
+Select every local image, including untagged images:
+
+```shell
+dic --all
+```
+
+`--all` cannot be combined with a query and still requires confirmation unless `--yes` is supplied.
+
+```text
+Usage: dic [OPTIONS] [QUERY]
+
+Arguments:
+  [QUERY]  String to match against image repository tags
+
+Options:
+      --all          Match every local image, including untagged images
+  -i, --ignore-case  Match image tags without regard to ASCII case
+      --dry-run      Show matches without prompting or deleting anything
+  -y, --yes          Delete without asking for confirmation
+      --no-force     Disable forced image removal (force is enabled by default)
+  -h, --help         Print help
+  -V, --version      Print version
+```
+
+Colors are disabled when output is redirected or the [`NO_COLOR`](https://no-color.org/) environment variable is set.
 
 ## Screenshot
 
 ![Screenshot](images/readme-screenshot-1.png)
 
+## Development
+
+Run the local quality checks with:
+
+```shell
+cargo fmt --all -- --check
+cargo clippy --all-targets --all-features -- -D warnings
+cargo test --all-targets
+```
+
+CI runs these checks on Linux and macOS. Dependabot and a scheduled RustSec audit monitor dependencies.
+
 ## License
 
-This is code is BSD licensed.  I've released this in the open, but I don't intend to put a 
-ton of effort in maintaining it FYI. 
-
-## Building
-
-To build during development run `cargo build` to build a new optimized release run `cargo build --release`.
-
+BSD-3-Clause. See [LICENSE](LICENSE).
