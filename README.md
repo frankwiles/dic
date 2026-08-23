@@ -6,18 +6,27 @@
 
 ## Installation
 
-Rust 1.85 or newer is required.
+### Homebrew (recommended)
 
 ```shell
-cargo install --path .
+brew install frankwiles/tools/dic
 ```
 
-During development:
+### Binary releases
+
+Prebuilt binaries for Linux, macOS, and Windows are available on the [GitHub Releases page](https://github.com/frankwiles/dic/releases).
+
+### Build from source
+
+Building from source requires Rust 1.85 or newer:
 
 ```shell
-cargo build
+git clone https://github.com/frankwiles/dic.git
+cd dic
 cargo build --release
 ```
+
+The binary will be written to `target/release/dic`.
 
 ## Usage
 
